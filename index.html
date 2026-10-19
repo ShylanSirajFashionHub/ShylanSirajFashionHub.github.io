@@ -34,6 +34,22 @@ a{color:inherit;text-decoration:none}
 .section-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
 .section h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.8px;margin:0}
 .search{width:min(100%,300px);padding:11px 13px;border:1px solid var(--line);border-radius:8px}
+
+/* Grid & Theme Styles */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.grid.theme-modern {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.grid.theme-compact {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
 .product{min-width:0;border:1px solid var(--line);border-radius:13px;padding:12px;display:flex;flex-direction:column;background:#fff;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .product:hover{box-shadow:0 4px 12px rgba(0,0,0,0.06)}
 .product img,.placeholder{width:100%;aspect-ratio:4/4.5;object-fit:cover;border-radius:9px;background:#f0f1f5}
@@ -74,8 +90,22 @@ a{color:inherit;text-decoration:none}
 .modal-info .price{font-size:20px;margin:8px 0}
 .modal-info p{color:#666;font-size:14px;line-height:1.6;margin:0 0 15px}
 .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
-@media(max-width:580px){.site-header{flex-direction:column;align-items:flex-start;padding:12px 16px;gap:8px}.nav{width:100%;justify-content:space-between;gap:6px}.grid{grid-template-columns:1fr;gap:16px}.modal-overlay{padding:0}.modal-card{width:100%!important;height:100%!important;max-height:100vh!important;border-radius:0!important;display:flex!important;flex-direction:column!important;padding:24px 16px!important}.modal-card-product{display:flex!important;flex-direction:column!important}.modal-img-wrap img{max-height:260px}.modal-close{top:12px;right:12px}}
+
+@media(max-width:900px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .grid.theme-modern{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid.theme-compact{grid-template-columns:1fr}
+}
+@media(max-width:580px){
+  .site-header{flex-direction:column;align-items:flex-start;padding:12px 16px;gap:8px}
+  .nav{width:100%;justify-content:space-between;gap:6px}
+  .grid, .grid.theme-modern, .grid.theme-compact{grid-template-columns:1fr;gap:16px}
+  .modal-overlay{padding:0}
+  .modal-card{width:100%!important;height:100%!important;max-height:100vh!important;border-radius:0!important;display:flex!important;flex-direction:column!important;padding:24px 16px!important}
+  .modal-card-product{display:flex!important;flex-direction:column!important}
+  .modal-img-wrap img{max-height:260px}
+  .modal-close{top:12px;right:12px}
+}
 </style>
 </head>
 <body>
@@ -132,7 +162,7 @@ function renderApp(){
   $("checkout").textContent = st.paymentLabel || "Pay securely";
   document.documentElement.style.setProperty("--brand", /^#[0-9a-f]{6}$/i.test(st.color||"") ? st.color : "#635bff");
 
-  let navHtml = '<a href="#home" data-home>Home</a><a href="#shop" data-shop>Shop</a>';
+  let navHtml = '<a href="#home" data-home>Home</a><a href="#shop" data-shop>Shop</a><button type="button" data-cart>Cart</button>';
   links.filter(l => !l.placement || l.placement === 'header' || l.placement === 'both').forEach(l => { 
     navHtml += '<a href="'+escapeHTML(l.url)+'" target="_blank" rel="noopener noreferrer">'+escapeHTML(l.title)+'</a>'; 
   });
@@ -144,7 +174,7 @@ function renderApp(){
     navHtml += '<button style="background:none;border:0;cursor:pointer;color:inherit;font:inherit;" id="loginNav">'+escapeHTML(st.loginLabel||'Sign in')+'</button>';
     navHtml += '<button style="background:none;border:0;cursor:pointer;color:inherit;font:inherit;font-weight:bold;color:'+escapeHTML(st.color)+'" id="registerNav">'+escapeHTML(st.registerLabel||'Create Account')+'</button>';
   }
-  navHtml += '<button class="btn" id="cartBtn">Cart (0)</button>';
+  navHtml += '<button class="btn" id="cartBtn" data-cart>Cart ('+count()+')</button>';
   $("siteNav").innerHTML = navHtml;
 
   let footerLinksHtml = '';
@@ -162,7 +192,8 @@ function renderApp(){
     $("standaloneRegForm").onsubmit = e => { e.preventDefault(); localStorage.setItem("loginuser", $("rEmail").value.trim()); view = "shop"; renderApp(); showModal({title:"Success", message:"Account created and signed in!"}); };
     $("toLog").onclick = e => { e.preventDefault(); view = "login"; renderApp(); };
   } else {
-    $("mainContent").innerHTML = '<section class="hero" id="home"><div class="eyebrow">Welcome to our store</div><h1 id="headline">'+escapeHTML(st.tagline)+'</h1><p id="intro">'+escapeHTML(st.description)+'</p><a class="btn" href="#shop" data-shop-btn>Explore collection ↓</a></section><section class="section" id="shop"><div class="section-head"><div><h2>Shop collection</h2></div><input class="search" id="search" type="search" placeholder="Search products…"></div><div class="grid" id="products"></div></section>';
+    let gridClass = "grid theme-" + (st.theme || "minimal");
+    $("mainContent").innerHTML = '<section class="hero" id="home"><div class="eyebrow">Welcome to our store</div><h1 id="headline">'+escapeHTML(st.tagline)+'</h1><p id="intro">'+escapeHTML(st.description)+'</p><a class="btn" href="#shop" data-shop-btn>Explore collection ↓</a></section><section class="section" id="shop"><div class="section-head"><div><h2>Shop collection</h2></div><input class="search" id="search" type="search" placeholder="Search products…"></div><div class="'+gridClass+'" id="products"></div></section>';
     renderProducts();
     $("search").addEventListener("input", renderProducts);
   }
@@ -170,7 +201,6 @@ function renderApp(){
   if($("loginNav")) $("loginNav").onclick = () => { view = "login"; renderApp(); };
   if($("registerNav")) $("registerNav").onclick = () => { view = "register"; renderApp(); };
   if($("logoutNav")) $("logoutNav").onclick = () => { localStorage.removeItem("loginuser"); renderApp(); showModal({title:"Signed Out", message:"Signed out successfully."}); };
-  if($("cartBtn")) $("cartBtn").onclick = () => { $("overlay").classList.remove("hidden"); renderCart(); };
   if($("logo")) $("logo").onclick = () => { view = "shop"; renderApp(); window.scrollTo(0,0); };
   document.querySelectorAll("[data-home]").forEach(el => el.onclick = e => { e.preventDefault(); view = "shop"; renderApp(); window.scrollTo(0,0); });
   document.querySelectorAll("[data-shop], [data-shop-btn]").forEach(el => el.onclick = e => { e.preventDefault(); view = "shop"; renderApp(); const elShop = $("shop"); if(elShop) elShop.scrollIntoView({behavior:"smooth"}); });
@@ -180,12 +210,6 @@ function renderProducts(){
   if(!$("products")) return;
   const q = $("search").value.trim().toLowerCase();
   const shown = products.filter(p => (p.name + " " + (p.description||"")).toLowerCase().includes(q));
-  
-  let gridStyle = "display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px;";
-  if (st.theme === "modern") gridStyle = "display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;";
-  if (st.theme === "compact") gridStyle = "display:grid; grid-template-columns: 1fr; gap: 12px;";
-  const gridEl = $("products").parentElement.querySelector(".grid") || $("products");
-  gridEl.style.cssText = gridStyle;
 
   $("products").innerHTML = shown.map(p => {
     let priceHtml = '<div class="price">'+money(p.price)+'</div>';
@@ -218,6 +242,11 @@ function openModal(id){
 }
 
 document.addEventListener("click", e => {
+  if (e.target.closest("[data-cart]")) {
+    $("overlay").classList.remove("hidden");
+    renderCart();
+    return;
+  }
   const thumb = e.target.closest("[data-thumb-src]");
   if(thumb){
     const mainImg = $("modalMainImg");
@@ -245,7 +274,7 @@ document.addEventListener("click", e => {
     if(p && p.stock > (cart[p.id]||0)){
       cart[p.id] = (cart[p.id]||0) + 1;
       renderCart();
-      showModal({title: "Cart Updated", message: "Added to cart successfully!"});
+      $("overlay").classList.remove("hidden");
     }else{
       showModal({title: "Limit Reached", message: "Stock limit reached for this product."});
     }
@@ -284,7 +313,8 @@ document.addEventListener("click", e => {
     if(p && p.stock > (cart[p.id]||0)){
       cart[p.id] = (cart[p.id]||0) + 1;
       renderCart();
-      showModal({title: "Cart Updated", message: "Added to cart successfully!"});
+      $("productModal").classList.add("hidden");
+      $("overlay").classList.remove("hidden");
     }else{
       showModal({title: "Limit Reached", message: "Stock limit reached for this product."});
     }
@@ -293,9 +323,10 @@ document.addEventListener("click", e => {
 
 function count(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
 function renderCart(){
-  $("cartBtn").textContent = "Cart ("+count()+")";
+  const cartBtnEl = $("cartBtn");
+  if(cartBtnEl) cartBtnEl.textContent = "Cart ("+count()+")";
   const items = products.filter(p => cart[p.id] > 0);
-  $("cartItems").innerHTML = items.map(p => '<div class="cartrow">'+(safeImage(p.image)?'<img src="'+escapeHTML(safeImage(p.image))+'" alt="">':'')+'<div class="cartinfo"><strong>'+escapeHTML(p.name)+'</strong><small>'+money(p.price)+'</small><div class="qty"><button data-minus="'+escapeHTML(p.id)+'">−</button><span>'+cart[p.id]+'</span><button data-plus="'+escapeHTML(p.id)+'">+</button><button data-remove="'+escapeHTML(p.id)+'">Remove</button></div></div></div>').join("") || '<p class="note">Your cart is empty.</p>';
+  $("cartItems").innerHTML = items.map(p => '<div class="cartrow">'+(safeImage(p.image)?'<img src="'+escapeHTML(safeImage(p.image))+'" alt="">':'')+'<div class="cartinfo"><strong>'+escapeHTML(p.name)+'</strong><small>'+money(p.price)+'</small><div class="qty"><button data-minus="'+escapeHTML(p.id)+'">−</button><span>'+cart[p.id]+'</span><button data-plus="'+escapeHTML(p.id)+'">+</button><button data-remove="'+escapeHTML(p.id)+'">Remove</button></div></div></div>').join("") || '<p class="note" style="padding:20px;text-align:center;color:#777">Your cart is empty.</p>';
   
   let subtotal = items.reduce((n,p)=>n+Number(p.price||0)*cart[p.id],0);
   let discountAmount = subtotal * (discountRate / 100);
@@ -333,6 +364,7 @@ $("cartItems").addEventListener("click", e => {
   if(b.dataset.minus){ cart[id]--; if(cart[id]<=0) delete cart[id]; }
   if(b.dataset.remove) delete cart[id];
   renderCart();
+  if($("cartBtn")) $("cartBtn").textContent = "Cart ("+count()+")";
 });
 
 $("closeBtn").onclick = () => $("overlay").classList.add("hidden");
